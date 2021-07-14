@@ -1,7 +1,11 @@
 # Pull from a base image
 FROM node:14-alpine
 
-# Use app/ as the working directory
+# Decreased verbosity of logs during docker build
+ENV NPM_CONFIG_LOGLEVEL warn
+
+# Create and use /app as the working directory
+RUN mkdir -p /app/node_modules
 WORKDIR /app
 
 COPY package.json ./
@@ -14,10 +18,16 @@ RUN yarn install --frozen-lockfile
 
 COPY . .
 
-# Build production client side React application
-# RUN yarn build
+# Build a prod bundle and serve it using aa server when NODE_ENV is set to production
+CMD if [ ${NODE_ENV} = production ]; \
+	then \
+	yarn global add http-server && \
+	yarn build && \
+	cd build && \
+	hs -p 3000; \
+	else \
+	yarn docker:start; \
+	fi
 
 # Listen on the specified port
 EXPOSE 3000
-
-CMD ["yarn", "docker:start"]
